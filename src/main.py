@@ -9,7 +9,6 @@ from apps import chronometers, create_db_and_tables
 
 main_path = Path(__file__).resolve().parents[1]
 
-# Lista dicionário atuando como fonte da verdade dos apps instalados
 projects = [
     {
         "name": "Chronometers",
@@ -17,8 +16,8 @@ projects = [
         "version": "1.0",
         "path": "src/apps/chronometers/chronometers.html",
         "end_point": "/chronometers",
-        "icon": "clock",
-        "icon_color": "#ff00ff",
+        "icon": "alarm-clock",
+        "icon_color": "#c56cff",
     }
 ]
 
@@ -38,7 +37,6 @@ async def index():
     return FileResponse(main_path / "src/apps/index/index.html")
 
 
-# Endpoint para o index.html consumir e renderizar a lista
 @app.get("/api/projects")
 async def get_projects():
     return JSONResponse(content=projects)
@@ -49,9 +47,7 @@ async def css_pico():
     return FileResponse(main_path / "pico/css/pico.min.css")
 
 
-# Gerador Dinâmico de Rotas para os HTMLs
 for proj in projects:
-    # Usamos uma função closure para capturar o path correto no escopo do loop
     def create_html_handler(file_path: str):
         async def handler():
             return FileResponse(main_path / file_path)
@@ -65,5 +61,4 @@ for proj in projects:
         include_in_schema=False,  # Oculta as rotas de UI do /docs (Swagger)
     )
 
-# Inicialização dos Módulos (Backend REST das ferramentas)
 chronometers(app)
