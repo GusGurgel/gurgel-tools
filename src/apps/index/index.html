@@ -1,19 +1,124 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="color-scheme" content="light dark" />
-        <link rel="stylesheet" href="css/pico.min.css" />
-        <title>Hello world!</title>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Gurgel Tools Hub</title>
+        <!-- Local CSS & JS strictly used -->
+        <link rel="stylesheet" href="/css/pico.min.css" />
+        <script src="/static/lucide.js"></script>
+        <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="32x32"
+            href="/static/favicon-32x32.png"
+        />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="16x16"
+            href="/static/favicon-16x16.png"
+        />
+
+        <link
+            rel="apple-touch-icon"
+            sizes="180x180"
+            href="/static/apple-touch-icon.png"
+        />
+
+        <link rel="manifest" href="/static/site.webmanifest" />
+        <style>
+            .app-card {
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem 1rem;
+                text-decoration: none;
+                color: inherit;
+                transition:
+                    transform 0.2s ease,
+                    box-shadow 0.2s ease;
+            }
+            .app-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            }
+            .app-icon {
+                margin-bottom: 1rem;
+            }
+            .app-icon svg {
+                width: 64px;
+                height: 64px;
+            }
+            .version-badge {
+                font-size: 0.7rem;
+                background: var(--pico-muted-border-color);
+                padding: 0.1rem 0.4rem;
+                border-radius: var(--pico-border-radius);
+                margin-top: 0.5rem;
+            }
+        </style>
     </head>
     <body>
-        <main class="container">
-            <h1>Hello world! <i data-lucide="wrench"></i></h1>
+        <main class="container" style="padding-top: 3rem">
+            <hgroup style="text-align: center; margin-bottom: 3rem">
+                <h1>Gurgel Tools</h1>
+                <p>Select an application to launch</p>
+            </hgroup>
+
+            <!-- Grid dinâmico dos projetos -->
+            <div class="grid" id="projects-grid">
+                <!-- Os cards serão injetados aqui via JS -->
+            </div>
         </main>
-        <script src="static/lucide.js"></script>
+
         <script>
-            lucide.createIcons();
+            async function loadProjects() {
+                try {
+                    const res = await fetch("/api/projects");
+                    const projects = await res.json();
+                    const grid = document.getElementById("projects-grid");
+
+                    if (projects.length === 0) {
+                        grid.innerHTML =
+                            '<p style="text-align:center; width: 100%;">No projects available yet.</p>';
+                        return;
+                    }
+
+                    projects.forEach((proj) => {
+                        const article = document.createElement("article");
+                        article.style.margin = "0";
+                        article.style.padding = "0";
+
+                        article.innerHTML = `
+                        <a href="${proj.end_point}" class="app-card">
+                            <div class="app-icon" style="color: ${proj.icon_color};">
+                                <i data-lucide="${proj.icon}"></i>
+                            </div>
+                            <h3>${proj.name}</h3>
+                            <p style="margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--pico-muted-color);">
+                                ${proj.description}
+                            </p>
+                            <span class="version-badge">v${proj.version}</span>
+                        </a>
+                    `;
+                        grid.appendChild(article);
+                    });
+
+                    // Inicializa os ícones do Lucide após modificar o DOM
+                    lucide.createIcons();
+                } catch (err) {
+                    console.error("Error loading projects:", err);
+                    document.getElementById("projects-grid").innerHTML =
+                        "<p>Error loading tools. Please check backend connection.</p>";
+                }
+            }
+
+            // Inicia
+            loadProjects();
         </script>
     </body>
 </html>

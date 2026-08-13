@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronometers</title>
+    <!-- Local CSS & JS strictly used -->
+    <link rel="stylesheet" href="css/pico.min.css" />
+    <script src="static/lucide.js"></script>
+    <style>
+        .chrono-row {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+            gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--pico-muted-border-color);
+        }
+        .chrono-row:last-child { border-bottom: none; }
+        .chrono-info { flex: 1; min-width: 250px; }
+        .chrono-actions { display: flex; align-items: center; gap: 0.5rem; }
+        /* Alterado max-width para 150px conforme solicitado */
+        .time-input { max-width: 150px; text-align: center; margin-bottom: 0 !important; font-family: monospace; font-size: 1.1rem; }
+        .meta-data { display: block; font-size: 0.8rem; color: var(--pico-muted-color); margin-top: 0.2rem; }
+        .group-header { display: flex; justify-content: space-between; align-items: center; }
+        .icon-box { margin-right: 0.5rem; display: flex; align-items: center; }
+
+        /* Ajustes no input type color para ficar com cara de PicoCSS */
+        input[type="color"] {
+            padding: 0;
+            border: 1px solid var(--pico-muted-border-color);
+            height: 3rem;
+            width: 100%;
+            cursor: pointer;
+            border-radius: var(--pico-border-radius);
+        }
+    </style>
+</head>
+<body>
+    <main class="container" style="padding-top: 2rem;">
+
+        <!-- Global Countdown Timer -->
+        <article>
+            <header><strong>Global Countdown</strong></header>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <input type="text" id="countdown-input" class="time-input" value="00:00:00" placeholder="HH:MM:SS" style="max-width: 200px;" />
+                <button id="countdown-btn" class="secondary" style="width: auto;">
+                    <i data-lucide="play"></i> Start
+                </button>
+            </div>
+            <small class="meta-data">When reaching 00:00:00, this automatically stops any active chronometer globally.</small>
+        </article>
+
+        <!-- Creation Forms -->
+        <div class="grid">
+            <article>
+                <header>New Group</header>
+                <form id="form-group" style="margin: 0;">
+                    <div class="grid">
+                        <input type="text" id="group-name" placeholder="Group Name" required />
+                        <input type="text" id="group-icon" placeholder="Icon (e.g. folder)" required />
+                        <input type="color" id="group-color" value="#0172ad" title="Icon Color" required />
+                    </div>
+                    <button type="submit">Create Group</button>
+                </form>
+            </article>
+
+            <article>
+                <header>New Chronometer</header>
+                <form id="form-chrono" style="margin: 0;">
+                    <select id="chrono-group-id" required>
+                        <option value="" disabled selected>Select a Group...</option>
+                    </select>
+                    <div class="grid">
+                        <input type="text" id="chrono-name" placeholder="Name" required />
+                        <input type="text" id="chrono-icon" placeholder="Icon (e.g. wrench)" required />
+                        <input type="color" id="chrono-color" value="#0172ad" title="Icon Color" required />
+                    </div>
+                    <button type="submit">Create Chronometer</button>
+                </form>
+            </article>
+        </div>
+
+        <!-- Rendered Groups and Chronometers container -->
+        <div id="app-content"></div>
+
+    </main>
+
+    <script>
+        // State Management
+        let state = { groups: [], chronometers: [] };
+
+        let countdown = {
+            active: false,
+            remaining: 0,
+            lastTickTime: null
+        };
+
+        // Time format utilities
+        function formatTime(totalSeconds) {
+            totalSeconds = Math.max(0, Math.floor(totalSeconds));
+            const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+            const s = String(totalSeconds % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function parseTime(str) {
+            const regex = /^(\d{2,}):([0-5]\d):([0-5]\d)$/;
+            const match = str.match(regex);
+            if (!match) return null;
+            return parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3]);
+        }
+
+        function parseUTCDate(dateStr) {
+            if (!dateStr) return null;
+            return dateStr.endsWith('Z') ? new Date(dateStr) : new Date(dateStr + 'Z');
+        }
+
+        // Core API Fetchers
+        async function fetchAppContent() {
+            const [gRes, cRes] = await Promise.all([
+                fetch('/api/chrono-groups'),
+                fetch('/api/chronometers')
+            ]);
+            state.groups = await gRes.json();
+            state.chronometers = await cRes.json();
+        }
+
+        async function init() {
+            await fetchAppContent();
+            renderApp();
+            setInterval(tick, 1000);
+        }
+
+        // Render purely destroys/recreates DOM.
+        function renderApp() {
+            const content = document.getElementById('app-content');
+            const groupSelect = document.getElementById('chrono-group-id');
+
+            content.innerHTML = '';
+            groupSelect.innerHTML = '<option value="" disabled selected>Select a Group...</option>';
+
+            state.groups.forEach(group => {
+                // Populate Dropdown
+                const opt = document.createElement('option');
+                opt.value = group.id;
+                opt.textContent = group.name;
+                groupSelect.appendChild(opt);
+
+                // Build Group Article (Now with icon and color)
+                const article = document.createElement('article');
+                article.innerHTML = `
+                    <header class="group-header">
+                        <strong style="display:flex; align-items:center;">
+                            <span class="icon-box" style="color: ${group.icon_color};">
+                                <i data-lucide="${group.icon}"></i>
+                            </span>
+                            ${group.name}
+                        </strong>
+                        <div>Total Time: <strong id="group-total-${group.id}">00:00:00</strong></div>
+                    </header>
+                    <div id="group-list-${group.id}"></div>
+                    <footer>
+                         <button class="secondary outline" style="width:auto; padding: 0.2rem 0.5rem; font-size:0.8rem;" onclick="deleteGroup(${group.id})">Delete Group</button>
+                    </footer>
+                `;
+                content.appendChild(article);
+
+                const list = article.querySelector(`#group-list-${group.id}`);
+                const groupChronos = state.chronometers.filter(c => c.group_id === group.id);
+
+                groupChronos.forEach(chrono => {
+                    const row = document.createElement('div');
+                    row.className = 'chrono-row';
+
+                    row.innerHTML = `
+                        <div class="chrono-info">
+                            <strong style="display:flex; align-items:center;">
+                                <span class="icon-box" style="color: ${chrono.icon_color};">
+                                    <i data-lucide="${chrono.icon}"></i>
+                                </span>
+                                ${chrono.name}
+                            </strong>
+                            <span class="meta-data">Created: ${parseUTCDate(chrono.created_at).toLocaleString()}</span>
+                            <span class="meta-data">Last Started: <span id="chrono-started-${chrono.id}"></span></span>
+                            <span class="meta-data">Last Session: <span id="chrono-elapsed-${chrono.id}"></span></span>
+                        </div>
+                        <div class="chrono-actions">
+                            <input type="text" id="chrono-input-${chrono.id}" class="time-input" data-id="${chrono.id}" value="00:00:00" />
+                            <button id="chrono-btn-${chrono.id}" class="outline" data-id="${chrono.id}" data-current-icon="play" style="padding: 0.5rem; margin:0;" onclick="toggleChronometer(${chrono.id})">
+                                <i data-lucide="play"></i>
+                            </button>
+                            <button class="outline contrast" style="padding: 0.5rem; margin:0;" onclick="deleteChronometer(${chrono.id})">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(row);
+
+                    // Add Events for Inline Editing
+                    const input = row.querySelector(`#chrono-input-${chrono.id}`);
+
+                    input.addEventListener('focus', async (e) => {
+                        const cState = state.chronometers.find(c => c.id === chrono.id);
+                        if (cState && cState.is_running) {
+                            await fetch(`/api/chronometers/${chrono.id}/stop`, { method: 'POST' });
+                            await fetchAppContent();
+                        }
+                    });
+
+                    input.addEventListener('blur', async (e) => {
+                        const cState = state.chronometers.find(c => c.id === chrono.id);
+                        const parsed = parseTime(e.target.value);
+                        if (parsed !== null && parsed !== cState.accumulated_seconds) {
+                            await fetch(`/api/chronometers/${chrono.id}/update_time`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ total_seconds: parsed })
+                            });
+                            await fetchAppContent();
+                        } else {
+                            e.target.value = formatTime(cState.accumulated_seconds);
+                        }
+                    });
+
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') e.target.blur();
+                    });
+                });
+            });
+
+            lucide.createIcons();
+            updateDOMFromState();
+        }
+
+        // Non-destructive update logic
+        function updateDOMFromState() {
+            state.groups.forEach(group => {
+                let groupTotalSeconds = 0;
+                const groupChronos = state.chronometers.filter(c => c.group_id === group.id);
+
+                groupChronos.forEach(chrono => {
+                    let currentSecs = chrono.accumulated_seconds;
+                    if (chrono.is_running && chrono.last_started_at) {
+                        const startMs = parseUTCDate(chrono.last_started_at).getTime();
+                        currentSecs += (Date.now() - startMs) / 1000;
+                    }
+                    groupTotalSeconds += currentSecs;
+
+                    const input = document.getElementById(`chrono-input-${chrono.id}`);
+                    if (input && document.activeElement !== input) {
+                        input.value = formatTime(currentSecs);
+                    }
+
+                    const btn = document.getElementById(`chrono-btn-${chrono.id}`);
+                    if (btn) {
+                        const targetIcon = chrono.is_running ? 'square' : 'play';
+                        if (btn.dataset.currentIcon !== targetIcon) {
+                            btn.innerHTML = `<i data-lucide="${targetIcon}"></i>`;
+                            btn.dataset.currentIcon = targetIcon;
+                            lucide.createIcons({ root: btn });
+                        }
+                    }
+
+                    const startedSpan = document.getElementById(`chrono-started-${chrono.id}`);
+                    if (startedSpan) {
+                        startedSpan.textContent = chrono.last_started_at ? parseUTCDate(chrono.last_started_at).toLocaleString() : 'Never';
+                    }
+
+                    const elapsedSpan = document.getElementById(`chrono-elapsed-${chrono.id}`);
+                    if (elapsedSpan) {
+                        elapsedSpan.textContent = formatTime(chrono.last_elapsed_seconds);
+                    }
+                });
+
+                const totalSpan = document.getElementById(`group-total-${group.id}`);
+                if (totalSpan) {
+                    totalSpan.textContent = formatTime(groupTotalSeconds);
+                }
+            });
+        }
+
+        // Tick loop (1 second intervals)
+        function tick() {
+            updateDOMFromState();
+
+            if (countdown.active) {
+                const now = Date.now();
+                const deltaSecs = (now - countdown.lastTickTime) / 1000;
+                countdown.remaining -= deltaSecs;
+                countdown.lastTickTime = now;
+
+                if (countdown.remaining <= 0) {
+                    countdown.remaining = 0;
+                    countdown.active = false;
+
+                    const btn = document.getElementById('countdown-btn');
+                    btn.innerHTML = `<i data-lucide="play"></i> Start`;
+                    lucide.createIcons({root: btn});
+
+                    const runningChrono = state.chronometers.find(c => c.is_running);
+                    if (runningChrono) {
+                        fetch(`/api/chronometers/${runningChrono.id}/stop`, { method: 'POST' })
+                            .then(() => fetchAppContent())
+                            .then(() => updateDOMFromState());
+                    }
+                }
+
+                const cInput = document.getElementById('countdown-input');
+                if (document.activeElement !== cInput) {
+                    cInput.value = formatTime(countdown.remaining);
+                }
+            }
+        }
+
+        // Form Submit Actions
+        document.getElementById('countdown-btn').addEventListener('click', (e) => {
+            const input = document.getElementById('countdown-input');
+            const btn = e.currentTarget;
+
+            if (countdown.active) {
+                countdown.active = false;
+                btn.innerHTML = `<i data-lucide="play"></i> Start`;
+            } else {
+                const parsed = parseTime(input.value);
+                if (parsed !== null && parsed > 0) {
+                    countdown.remaining = parsed;
+                    countdown.active = true;
+                    countdown.lastTickTime = Date.now();
+                    btn.innerHTML = `<i data-lucide="square"></i> Stop`;
+                } else {
+                    input.value = "00:00:00";
+                }
+            }
+            lucide.createIcons({root: btn});
+        });
+
+        document.getElementById('form-group').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('group-name').value;
+            const icon = document.getElementById('group-icon').value;
+            const icon_color = document.getElementById('group-color').value;
+
+            await fetch('/api/chrono-groups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, icon, icon_color })
+            });
+            document.getElementById('form-group').reset();
+            await fetchAppContent();
+            renderApp();
+        });
+
+        document.getElementById('form-chrono').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const group_id = document.getElementById('chrono-group-id').value;
+            const name = document.getElementById('chrono-name').value;
+            const icon = document.getElementById('chrono-icon').value;
+            const icon_color = document.getElementById('chrono-color').value;
+
+            await fetch('/api/chronometers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ group_id, name, icon, icon_color })
+            });
+            document.getElementById('form-chrono').reset();
+            await fetchAppContent();
+            renderApp();
+        });
+
+        // Data Management Actions
+        async function toggleChronometer(id) {
+            const chrono = state.chronometers.find(c => c.id === id);
+            const action = chrono.is_running ? 'stop' : 'start';
+            await fetch(`/api/chronometers/${id}/${action}`, { method: 'POST' });
+            await fetchAppContent();
+            updateDOMFromState();
+        }
+
+        async function deleteGroup(id) {
+            if (!confirm("Are you sure? This will delete the group and all its chronometers.")) return;
+            await fetch(`/api/chrono-groups/${id}`, { method: 'DELETE' });
+            await fetchAppContent();
+            renderApp();
+        }
+
+        async function deleteChronometer(id) {
+            if (!confirm("Delete this chronometer?")) return;
+            await fetch(`/api/chronometers/${id}`, { method: 'DELETE' });
+            await fetchAppContent();
+            renderApp();
+        }
+
+        // Boot
+        init();
+    </script>
+</body>
+</html>
