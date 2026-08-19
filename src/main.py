@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from apps import chronometers, create_db_and_tables
+from apps import chronometers, create_db_and_tables, snippets
 
 main_path = Path(__file__).resolve().parents[1]
 
@@ -18,9 +18,17 @@ projects = [
         "end_point": "/chronometers",
         "icon": "alarm-clock",
         "icon_color": "#c56cff",
+    },
+    {
+        "name": "Snippets",
+        "description": "Store, organize, and quickly copy chunks of information.",
+        "version": "1.0",
+        "path": "src/apps/snippets/snippets.html",
+        "end_point": "/snippets",
+        "icon": "scissors",
+        "icon_color": "#10b981",
     }
 ]
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -62,3 +70,4 @@ for proj in projects:
     )
 
 chronometers(app)
+snippets(app)
