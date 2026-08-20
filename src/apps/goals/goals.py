@@ -119,6 +119,7 @@ class Increment(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     goal_id: int = Field(foreign_key="goal.id")
     value: int
+    text: Optional[str] = None  # <--- NOVO CAMPO
     image_url: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -153,11 +154,13 @@ class GoalUpdate(BaseModel):
 
 class IncrementCreate(BaseModel):
     value: int
+    text: Optional[str] = None  # <--- NOVO CAMPO
     image_url: Optional[str] = None
 
 
 class IncrementUpdate(BaseModel):
     value: Optional[int] = None
+    text: Optional[str] = None  # <--- NOVO CAMPO
     image_url: Optional[str] = None
 
 
@@ -165,6 +168,7 @@ class IncrementRead(BaseModel):
     id: int
     goal_id: int
     value: int
+    text: Optional[str] = None  # <--- NOVO CAMPO
     image_url: Optional[str] = None
     created_at: datetime
 
