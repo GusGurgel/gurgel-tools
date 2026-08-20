@@ -1,126 +1,158 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snippets Hub - gurgel-tools</title>
-    <!-- Strictly using local path for Pico CSS -->
-    <link rel="stylesheet" href="css/pico.min.css" />
-    <style>
-        .snippet-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        .snippet-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .snippet-actions button {
-            padding: 0.25rem 0.5rem;
-            border: none;
-        }
-        .group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        .auto-save-success {
-            border-color: var(--pico-ins-color) !important;
-        }
-        textarea {
-            resize: vertical;
-            font-family: monospace;
-        }
-    </style>
-</head>
-<body>
-    <header class="container" style="margin-top: 2rem;">
-        <nav>
-            <ul>
-                <li><h1 style="margin: 0;"><i data-lucide="scissors" style="vertical-align: middle;"></i> Snippets</h1></li>
-            </ul>
-            <ul>
-                <li>
-                    <input type="search" id="searchInput" placeholder="Search..." style="margin-bottom: 0;" />
-                </li>
-                <li>
-                    <select id="searchType" style="margin-bottom: 0;">
-                        <option value="snippet">Search by Snippet Name</option>
-                        <option value="group" selected>Search by Group Name</option>
-                    </select>
-                </li>
-            </ul>
-        </nav>
-        <hr />
-    </header>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Snippets Hub - gurgel-tools</title>
+        <!-- Strictly using local path for Pico CSS -->
+        <link rel="stylesheet" href="css/pico.min.css" />
+        <style>
+            .snippet-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.5rem;
+            }
+            .snippet-actions {
+                display: flex;
+                gap: 0.5rem;
+            }
+            .snippet-actions button {
+                padding: 0.25rem 0.5rem;
+                border: none;
+            }
+            .group-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+            }
+            .auto-save-success {
+                border-color: var(--pico-ins-color) !important;
+            }
+            textarea {
+                resize: vertical;
+                font-family: monospace;
+            }
+        </style>
+    </head>
+    <body>
+        <header class="container" style="margin-top: 2rem">
+            <nav>
+                <ul>
+                    <li>
+                        <h1 style="margin: 0">
+                            <i
+                                data-lucide="scissors"
+                                style="vertical-align: middle"
+                            ></i>
+                            Snippets
+                        </h1>
+                    </li>
+                </ul>
+                <ul>
+                    <li>
+                        <input
+                            type="search"
+                            id="searchInput"
+                            placeholder="Search..."
+                            style="margin-bottom: 0"
+                        />
+                    </li>
+                    <li>
+                        <select id="searchType" style="margin-bottom: 0">
+                            <option value="snippet">
+                                Search by Snippet Name
+                            </option>
+                            <option value="group" selected>
+                                Search by Group Name
+                            </option>
+                        </select>
+                    </li>
+                </ul>
+            </nav>
+            <hr />
+        </header>
 
-    <main class="container">
-        <!-- New Group Creation Form -->
-        <details>
-            <summary role="button" class="secondary outline">Create New Group</summary>
-            <form id="createGroupForm" style="margin-top: 1rem;">
-                <fieldset role="group">
-                    <input type="text" id="newGroupName" placeholder="Enter Group Name..." required />
-                    <button type="submit">Create</button>
-                </fieldset>
-            </form>
-        </details>
+        <main class="container">
+            <!-- New Group Creation Form -->
+            <details>
+                <summary role="button" class="secondary outline">
+                    Create New Group
+                </summary>
+                <form id="createGroupForm" style="margin-top: 1rem">
+                    <fieldset role="group">
+                        <input
+                            type="text"
+                            id="newGroupName"
+                            placeholder="Enter Group Name..."
+                            required
+                        />
+                        <button type="submit">Create</button>
+                    </fieldset>
+                </form>
+            </details>
 
-        <!-- Dynamic Groups Container -->
-        <div id="groupsContainer" style="margin-top: 2rem;"></div>
-    </main>
+            <!-- Dynamic Groups Container -->
+            <div id="groupsContainer" style="margin-top: 2rem"></div>
+        </main>
 
-    <!-- Strictly using local path for Lucide Icons -->
-    <script src="static/lucide.js"></script>
-    <script>
-        // DOM Elements
-        const groupsContainer = document.getElementById('groupsContainer');
-        const searchInput = document.getElementById('searchInput');
-        const searchType = document.getElementById('searchType');
-        const createGroupForm = document.getElementById('createGroupForm');
+        <!-- Strictly using local path for Lucide Icons -->
+        <script src="static/lucide.js"></script>
+        <script>
+            // DOM Elements
+            const groupsContainer = document.getElementById("groupsContainer");
+            const searchInput = document.getElementById("searchInput");
+            const searchType = document.getElementById("searchType");
+            const createGroupForm = document.getElementById("createGroupForm");
 
-        // Security Utility function to escape malicious HTML
-        const escapeHtml = (str) => {
-            if (!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        };
+            // Security Utility function to escape malicious HTML
+            const escapeHtml = (str) => {
+                if (!str) return "";
+                return str
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            };
 
-        // --- Core Lifecycle ---
+            // --- Core Lifecycle ---
 
-        async function loadGroups() {
-            const q = searchInput.value.trim();
-            const type = searchType.value;
+            async function loadGroups() {
+                const q = searchInput.value.trim();
+                const type = searchType.value;
 
-            let url = '/api/snippet-groups';
-            if (q) {
-                url = `/api/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}`;
+                let url = "/api/snippet-groups";
+                if (q) {
+                    url = `/api/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}`;
+                }
+
+                try {
+                    const res = await fetch(url);
+                    const groups = await res.json();
+                    renderGroups(groups);
+                } catch (err) {
+                    console.error("Failed to load groups:", err);
+                }
             }
 
-            try {
-                const res = await fetch(url);
-                const groups = await res.json();
-                renderGroups(groups);
-            } catch (err) {
-                console.error("Failed to load groups:", err);
-            }
-        }
+            function renderGroups(groups) {
+                if (groups.length === 0) {
+                    groupsContainer.innerHTML = `<p style="text-align: center; color: var(--pico-muted-color);">No snippets found.</p>`;
+                    return;
+                }
 
-        function renderGroups(groups) {
-            if (groups.length === 0) {
-                groupsContainer.innerHTML = `<p style="text-align: center; color: var(--pico-muted-color);">No snippets found.</p>`;
-                return;
-            }
-
-            groupsContainer.innerHTML = groups.map(group => `
+                groupsContainer.innerHTML = groups
+                    .map(
+                        (group) => `
                 <article class="group-card" data-id="${group.id}">
                     <header class="group-header">
                         <div>
                             <h3 style="margin-bottom: 0;">${escapeHtml(group.name)}</h3>
                             <small style="color: var(--pico-muted-color);">
                                 Created: ${new Date(group.created_at).toLocaleDateString()}
+                                ${group.last_copied_at ? `<br>Last Used: ${new Date(group.last_copied_at).toLocaleString()}` : ""}
                             </small>
                         </div>
                         <button class="outline contrast" onclick="deleteGroup(${group.id})" title="Delete entire group">
@@ -129,7 +161,9 @@
                     </header>
 
                     <div class="snippets-list">
-                        ${group.snippets.map(snippet => `
+                        ${group.snippets
+                            .map(
+                                (snippet) => `
                             <div class="snippet-item" style="margin-bottom: 1.5rem;">
                                 <div class="snippet-header">
                                     <strong>${escapeHtml(snippet.name)}</strong>
@@ -145,7 +179,9 @@
                                 <!-- Textarea for multiline content, essential for the auto-save functionality -->
                                 <textarea class="snippet-content" data-id="${snippet.id}" rows="3" placeholder="Type here. Saves automatically on blur...">${escapeHtml(snippet.content)}</textarea>
                             </div>
-                        `).join('')}
+                        `,
+                            )
+                            .join("")}
                     </div>
 
                     <footer style="margin-top: 1rem;">
@@ -158,127 +194,143 @@
                         </form>
                     </footer>
                 </article>
-            `).join('');
+            `,
+                    )
+                    .join("");
 
-            // Always recreate icons dynamically after DOM mutations
-            lucide.createIcons();
-        }
+                // Always recreate icons dynamically after DOM mutations
+                lucide.createIcons();
+            }
 
-        // --- Actions & API Calls ---
+            // --- Actions & API Calls ---
 
-        createGroupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nameInput = document.getElementById('newGroupName');
-            await fetch('/api/snippet-groups', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: nameInput.value.trim() })
+            createGroupForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const nameInput = document.getElementById("newGroupName");
+                await fetch("/api/snippet-groups", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: nameInput.value.trim() }),
+                });
+                nameInput.value = "";
+                loadGroups();
             });
-            nameInput.value = '';
-            loadGroups();
-        });
 
-        async function createSnippet(e, groupId) {
-            e.preventDefault();
-            const form = e.target;
-            const name = form.snippetName.value.trim();
-            const content = form.snippetContent.value.trim();
+            async function createSnippet(e, groupId) {
+                e.preventDefault();
+                const form = e.target;
+                const name = form.snippetName.value.trim();
+                const content = form.snippetContent.value.trim();
 
-            await fetch('/api/snippets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, content, group_id: groupId })
-            });
-            loadGroups();
-        }
+                await fetch("/api/snippets", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, content, group_id: groupId }),
+                });
+                loadGroups();
+            }
 
-        async function deleteGroup(id) {
-            if (!confirm("Are you sure you want to delete this group and all its snippets?")) return;
-            await fetch(`/api/snippet-groups/${id}`, { method: 'DELETE' });
-            loadGroups();
-        }
+            async function deleteGroup(id) {
+                if (
+                    !confirm(
+                        "Are you sure you want to delete this group and all its snippets?",
+                    )
+                )
+                    return;
+                await fetch(`/api/snippet-groups/${id}`, { method: "DELETE" });
+                loadGroups();
+            }
 
-        async function deleteSnippet(id) {
-            if (!confirm("Delete this snippet?")) return;
-            await fetch(`/api/snippets/${id}`, { method: 'DELETE' });
-            loadGroups();
-        }
+            async function deleteSnippet(id) {
+                if (!confirm("Delete this snippet?")) return;
+                await fetch(`/api/snippets/${id}`, { method: "DELETE" });
+                loadGroups();
+            }
 
-        // --- Copy & Auto-Save Logic ---
+            // --- Copy & Auto-Save Logic ---
 
-        async function copySnippet(id, btnElement) {
-            const snippetItem = btnElement.closest('.snippet-item');
-            const textarea = snippetItem.querySelector('textarea.snippet-content');
+            async function copySnippet(id, btnElement) {
+                const snippetItem = btnElement.closest(".snippet-item");
+                const textarea = snippetItem.querySelector(
+                    "textarea.snippet-content",
+                );
 
-            try {
-                // 1. Write to local clipboard
-                await navigator.clipboard.writeText(textarea.value);
+                try {
+                    // 1. Copia para o clipboard
+                    await navigator.clipboard.writeText(textarea.value);
 
-                // 2. Temporarily switch icon to 'check' for visual feedback
-                const icon = btnElement.querySelector('i');
-                icon.setAttribute('data-lucide', 'check');
-                lucide.createIcons({ root: btnElement });
-                setTimeout(() => {
-                    icon.setAttribute('data-lucide', 'copy');
+                    // 2. Troca o conteúdo do botão inteiro, já que o Lucide transforma o <i> em <svg>
+                    btnElement.innerHTML = '<i data-lucide="check"></i>';
                     lucide.createIcons({ root: btnElement });
-                }, 1500);
 
-                // 3. Register backend copy logic to alter usage sorting
-                await fetch(`/api/snippets/${id}/copy`, { method: 'POST' });
-                // We deliberately do not trigger `loadGroups()` here so the UI doesn't jump aggressively while the user is interacting with it.
-            } catch (err) {
-                console.error('Failed to copy to clipboard', err);
-            }
-        }
+                    // 3. Registra a cópia no backend para alterar o last_copied_at
+                    await fetch(`/api/snippets/${id}/copy`, { method: "POST" });
 
-        // Event delegation: Auto-Save logic for textareas
-        groupsContainer.addEventListener('focusin', (e) => {
-            if (e.target.matches('textarea.snippet-content')) {
-                // Save the initial state on focus
-                e.target.dataset.originalValue = e.target.value;
-            }
-        });
-
-        groupsContainer.addEventListener('focusout', async (e) => {
-            if (e.target.matches('textarea.snippet-content')) {
-                const newVal = e.target.value;
-                const oldVal = e.target.dataset.originalValue;
-
-                // Only send request if content has actively changed
-                if (newVal !== oldVal) {
-                    const snippetId = e.target.dataset.id;
-                    try {
-                        await fetch(`/api/snippets/${snippetId}`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ content: newVal })
-                        });
-                        e.target.dataset.originalValue = newVal; // Sync new origin
-
-                        // Brief visual feedback showing save was successful
-                        e.target.classList.add('auto-save-success');
-                        setTimeout(() => e.target.classList.remove('auto-save-success'), 1000);
-                    } catch (err) {
-                        console.error('Failed to auto-save snippet', err);
-                        e.target.setAttribute('aria-invalid', 'true'); // Pico CSS error visual
-                    }
+                    // 4. Aguarda 1.5s para o usuário ver o "Check" e então atualiza a tela
+                    setTimeout(() => {
+                        // Reverte o ícone visualmente (opcional, já que a tela vai recarregar, mas evita bugs visuais rápidos)
+                        btnElement.innerHTML = '<i data-lucide="copy"></i>';
+                        lucide.createIcons({ root: btnElement });
+                    }, 1500);
+                } catch (err) {
+                    console.error("Failed to copy to clipboard", err);
                 }
             }
-        });
 
-        // --- Search Events ---
+            // Event delegation: Auto-Save logic for textareas
+            groupsContainer.addEventListener("focusin", (e) => {
+                if (e.target.matches("textarea.snippet-content")) {
+                    // Save the initial state on focus
+                    e.target.dataset.originalValue = e.target.value;
+                }
+            });
 
-        let debounceTimer;
-        searchInput.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(loadGroups, 300);
-        });
+            groupsContainer.addEventListener("focusout", async (e) => {
+                if (e.target.matches("textarea.snippet-content")) {
+                    const newVal = e.target.value;
+                    const oldVal = e.target.dataset.originalValue;
 
-        searchType.addEventListener('change', loadGroups);
+                    // Only send request if content has actively changed
+                    if (newVal !== oldVal) {
+                        const snippetId = e.target.dataset.id;
+                        try {
+                            await fetch(`/api/snippets/${snippetId}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ content: newVal }),
+                            });
+                            e.target.dataset.originalValue = newVal; // Sync new origin
 
-        // Initial Boot
-        lucide.createIcons();
-        loadGroups();
-    </script>
-</body>
+                            // Brief visual feedback showing save was successful
+                            e.target.classList.add("auto-save-success");
+                            setTimeout(
+                                () =>
+                                    e.target.classList.remove(
+                                        "auto-save-success",
+                                    ),
+                                1000,
+                            );
+                        } catch (err) {
+                            console.error("Failed to auto-save snippet", err);
+                            e.target.setAttribute("aria-invalid", "true"); // Pico CSS error visual
+                        }
+                    }
+                }
+            });
+
+            // --- Search Events ---
+
+            let debounceTimer;
+            searchInput.addEventListener("input", () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(loadGroups, 300);
+            });
+
+            searchType.addEventListener("change", loadGroups);
+
+            // Initial Boot
+            lucide.createIcons();
+            loadGroups();
+        </script>
+    </body>
 </html>
