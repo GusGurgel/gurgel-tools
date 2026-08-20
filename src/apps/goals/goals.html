@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goals | gurgel-tools</title>
+    <!-- Local CSS as requested -->
+    <link rel="stylesheet" href="css/pico.min.css" />
+    <style>
+        .quote-banner {
+            text-align: center;
+            padding: 1rem;
+            background: var(--pico-card-background-color);
+            border-bottom: 1px solid var(--pico-muted-border-color);
+            margin-bottom: 2rem;
+            font-style: italic;
+            color: var(--pico-h1-color);
+        }
+        .goal-card {
+            margin-bottom: 1rem;
+            transition: transform 0.2s;
+        }
+        .goal-header {
+            cursor: pointer;
+            padding: 1rem;
+        }
+        .goal-header:hover {
+            background-color: var(--pico-form-element-background-color);
+        }
+        .progress-text {
+            font-size: 0.9rem;
+            color: var(--pico-muted-color);
+        }
+        .time-elapsed {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            justify-content: flex-end;
+            color: var(--pico-muted-color);
+        }
+        .timeline-container {
+            padding: 1rem;
+            border-top: 1px solid var(--pico-muted-border-color);
+            display: none;
+        }
+        .increment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed var(--pico-muted-border-color);
+        }
+        .increment-item:last-child {
+            border-bottom: none;
+        }
+        .inc-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .inc-date {
+            font-size: 0.75rem;
+            color: var(--pico-muted-color);
+        }
+        .inc-image {
+            max-width: 80px;
+            max-height: 80px;
+            border-radius: 4px;
+            margin-left: 1rem;
+            cursor: zoom-in;
+            object-fit: cover;
+            border: 1px solid var(--pico-muted-border-color);
+        }
+        progress {
+            margin-bottom: 0;
+            margin-top: 0.5rem;
+        }
+        .card-footer-actions {
+            padding: 0.5rem 1rem;
+            display: flex;
+            gap: 0.5rem;
+            border-top: 1px solid var(--pico-muted-border-color);
+        }
+        .btn-icon {
+            padding: 0.25rem 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .search-container {
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Daily Quote Banner -->
+    <div class="quote-banner" id="quote-banner">
+        Loading today's wisdom...
+    </div>
+
+    <main class="container">
+        <div class="grid" style="align-items: center;">
+            <h2><i data-lucide="target"></i> My Goals</h2>
+            <div style="text-align: right;">
+                <button class="outline" onclick="openGoalModal()">+ New Goal</button>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="search" id="search-input" placeholder="Search goals by name..." oninput="renderGoals()" />
+        </div>
+
+        <!-- Goals List -->
+        <div id="goals-list"></div>
+    </main>
+
+    <!-- Modal: Goal (Create/Edit) -->
+    <dialog id="goal-modal">
+        <article>
+            <header>
+                <a href="#close" aria-label="Close" class="close" onclick="closeGoalModal()"></a>
+                <strong id="goal-modal-title">New Goal</strong>
+            </header>
+            <form id="goal-form" onsubmit="saveGoal(event)">
+                <input type="hidden" id="goal-id" />
+                <label>Name
+                    <input type="text" id="goal-name" required placeholder="e.g. Solve security questions" />
+                </label>
+                <div class="grid">
+                    <label>Target
+                        <input type="number" id="goal-target" required min="1" placeholder="40" />
+                    </label>
+                    <label>Metric
+                        <input type="text" id="goal-metric" required placeholder="questions" />
+                    </label>
+                </div>
+                <button type="submit">Save Goal</button>
+            </form>
+        </article>
+    </dialog>
+
+    <!-- Modal: Edit Increment -->
+    <dialog id="inc-modal">
+        <article>
+            <header>
+                <a href="#close" aria-label="Close" class="close" onclick="closeIncModal()"></a>
+                <strong>Edit Increment</strong>
+            </header>
+            <form id="inc-form" onsubmit="saveIncrement(event)">
+                <input type="hidden" id="inc-id" />
+                <label>Value
+                    <input type="number" id="inc-value" required min="1" />
+                </label>
+                <label>Image URL (optional)
+                    <input type="url" id="inc-image" placeholder="https://..." />
+                </label>
+                <button type="submit">Save Increment</button>
+            </form>
+        </article>
+    </dialog>
+
+    <!-- Modal: Image Expansion -->
+    <dialog id="image-modal">
+        <article style="max-width: 90vw; text-align: center; padding-bottom: 1rem;">
+            <header>
+                <a href="#close" aria-label="Close" class="close" onclick="closeImageModal()"></a>
+                <strong>Image Preview</strong>
+            </header>
+            <img id="image-modal-src" src="" alt="Expanded View" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 4px; margin-top: 1rem;" />
+        </article>
+    </dialog>
+
+    <!-- Local JS as requested -->
+    <script src="static/lucide.js"></script>
+    <script>
+        // State
+        let goalsData = [];
+        let expandedGoals = new Set(); // Track expanded timelines across re-renders
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchQuote();
+            fetchGoals();
+            lucide.createIcons();
+
+            // Re-calculate live time every minute
+            setInterval(renderGoals, 60000);
+        });
+
+        // ==========================
+        // API FETCHERS
+        // ==========================
+        async function fetchQuote() {
+            try {
+                const res = await fetch('/api/goals/quote');
+                const data = await res.json();
+                document.getElementById('quote-banner').innerHTML = `"${data.quote}"`;
+            } catch (err) {
+                console.error('Failed to fetch quote', err);
+            }
+        }
+
+        async function fetchGoals() {
+            try {
+                const res = await fetch('/api/goals');
+                goalsData = await res.json();
+                renderGoals();
+            } catch (err) {
+                console.error('Failed to fetch goals', err);
+            }
+        }
+
+        // ==========================
+        // UTILS
+        // ==========================
+        function getElapsedTime(createdAt, completedAt) {
+            const start = new Date(createdAt.endsWith('Z') ? createdAt : createdAt + 'Z');
+            const end = completedAt ? new Date(completedAt.endsWith('Z') ? completedAt : completedAt + 'Z') : new Date();
+
+            const diffMs = Math.max(0, end - start);
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const days = Math.floor(diffHours / 24);
+            const hours = diffHours % 24;
+
+            return `${days}d ${hours}h`;
+        }
+
+        function formatDateTime(isoString) {
+            const date = new Date(isoString.endsWith('Z') ? isoString : isoString + 'Z');
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            const hh = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            return `${yyyy}/${mm}/${dd} ${hh}:${min}`;
+        }
+
+        function toggleTimeline(goalId) {
+            if (expandedGoals.has(goalId)) {
+                expandedGoals.delete(goalId);
+            } else {
+                expandedGoals.add(goalId);
+            }
+            renderGoals();
+        }
+
+        // ==========================
+        // RENDER LOGIC
+        // ==========================
+        function renderGoals() {
+            const container = document.getElementById('goals-list');
+            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+
+            // Filter by name (search bar logic)
+            const filteredGoals = goalsData.filter(goal =>
+                goal.name.toLowerCase().includes(searchQuery)
+            );
+
+            if (filteredGoals.length === 0) {
+                if (goalsData.length === 0) {
+                    container.innerHTML = '<p class="quote-banner">No goals yet. Set your sights on something great!</p>';
+                } else {
+                    container.innerHTML = '<p class="quote-banner">No goals found matching your search.</p>';
+                }
+                return;
+            }
+
+            container.innerHTML = filteredGoals.map(goal => {
+                const progress = goal.increments.reduce((sum, inc) => sum + inc.value, 0);
+                const isCompleted = !!goal.completed_at;
+                const elapsed = getElapsedTime(goal.created_at, goal.completed_at);
+                const isExpanded = expandedGoals.has(goal.id);
+
+                // Sort increments newest to oldest
+                const sortedIncrements = [...goal.increments].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                return `
+                <article class="goal-card card">
+                    <div class="goal-header" onclick="toggleTimeline(${goal.id})">
+                        <div class="grid">
+                            <div>
+                                <strong>${goal.name}</strong>
+                                ${isCompleted ? '<span style="color:var(--pico-ins-color); margin-left:0.5rem;"><i data-lucide="check-circle" style="width:16px;"></i> Completed</span>' : ''}
+                                <div class="progress-text">${progress} / ${goal.target} ${goal.metric}</div>
+                            </div>
+                            <div class="time-elapsed">
+                                <i data-lucide="clock" style="width: 16px;"></i> ${elapsed}
+                            </div>
+                        </div>
+                        <progress value="${progress}" max="${goal.target}"></progress>
+                    </div>
+
+                    <div class="timeline-container" style="display: ${isExpanded ? 'block' : 'none'};">
+                        ${!isCompleted ? `
+                            <form onsubmit="addIncrement(event, ${goal.id})" class="grid" style="margin-bottom: 1.5rem; align-items: flex-end;">
+                                <label>Add
+                                    <input type="number" name="value" required min="1" placeholder="Value" style="margin-bottom:0;" />
+                                </label>
+                                <label>Image URL (opt)
+                                    <input type="url" name="image" placeholder="https://" style="margin-bottom:0;" />
+                                </label>
+                                <button type="submit" style="margin-bottom:0;">Add</button>
+                            </form>
+                        ` : ''}
+
+                        <div>
+                            ${sortedIncrements.length === 0 ? '<small class="pico-color-muted">No increments yet.</small>' : ''}
+                            ${sortedIncrements.map(inc => `
+                                <div class="increment-item">
+                                    <div style="display:flex; align-items:center;">
+                                        <div class="inc-info">
+                                            <span><strong>+${inc.value}</strong>&nbsp;${goal.metric}</span>
+                                            <span class="inc-date">${formatDateTime(inc.created_at)}</span>
+                                        </div>
+                                        ${inc.image_url ? `<img src="${inc.image_url}" class="inc-image" alt="Increment image" onclick="openImageModal('${inc.image_url}')" title="Click to expand"/>` : ''}
+                                    </div>
+                                    <div>
+                                        <button class="outline btn-icon" style="border:none;" onclick="openIncModal(${inc.id}, ${inc.value}, '${inc.image_url || ''}')" title="Edit">
+                                            <i data-lucide="edit-2" style="width:14px;"></i>
+                                        </button>
+                                        <button class="outline btn-icon" style="border:none; color:var(--pico-del-color);" onclick="deleteIncrement(${inc.id})" title="Delete">
+                                            <i data-lucide="trash" style="width:14px;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="card-footer-actions">
+                        <button class="outline secondary btn-icon" onclick="openGoalModal(${goal.id})">
+                            <i data-lucide="edit" style="width:16px;"></i> Edit
+                        </button>
+                        <button class="outline btn-icon" style="color: var(--pico-del-color); border-color: var(--pico-del-color);" onclick="deleteGoal(${goal.id})" title="Delete Goal">
+                            <i data-lucide="trash-2" style="width:16px;"></i> Delete
+                        </button>
+                        ${!isCompleted ? `
+                            <button class="btn-icon" onclick="completeGoal(${goal.id})" ${progress < goal.target ? 'disabled' : ''} style="margin-left: auto;">
+                                <i data-lucide="check" style="width:16px;"></i> Complete
+                            </button>
+                        ` : ''}
+                    </div>
+                </article>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // ==========================
+        // IMAGE MODAL ACTIONS
+        // ==========================
+        function openImageModal(url) {
+            document.getElementById('image-modal-src').src = url;
+            document.getElementById('image-modal').showModal();
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').close();
+            document.getElementById('image-modal-src').src = '';
+        }
+
+        // ==========================
+        // GOAL ACTIONS
+        // ==========================
+        function openGoalModal(goalId = null) {
+            const modal = document.getElementById('goal-modal');
+            const form = document.getElementById('goal-form');
+            form.reset();
+
+            if (goalId) {
+                const goal = goalsData.find(g => g.id === goalId);
+                document.getElementById('goal-modal-title').innerText = 'Edit Goal';
+                document.getElementById('goal-id').value = goal.id;
+                document.getElementById('goal-name').value = goal.name;
+                document.getElementById('goal-target').value = goal.target;
+                document.getElementById('goal-metric').value = goal.metric;
+                document.getElementById('goal-metric').disabled = true;
+            } else {
+                document.getElementById('goal-modal-title').innerText = 'New Goal';
+                document.getElementById('goal-id').value = '';
+                document.getElementById('goal-metric').disabled = false;
+            }
+            modal.showModal();
+        }
+
+        function closeGoalModal() {
+            document.getElementById('goal-modal').close();
+        }
+
+        async function saveGoal(event) {
+            event.preventDefault();
+            const id = document.getElementById('goal-id').value;
+            const payload = {
+                name: document.getElementById('goal-name').value,
+                target: parseInt(document.getElementById('goal-target').value, 10),
+                metric: document.getElementById('goal-metric').value
+            };
+
+            try {
+                if (id) {
+                    delete payload.metric;
+                    await fetch(`/api/goals/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    await fetch('/api/goals', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                closeGoalModal();
+                fetchGoals();
+            } catch (err) {
+                alert('Error saving goal.');
+                console.error(err);
+            }
+        }
+
+        async function deleteGoal(goalId) {
+            if(!confirm("Are you sure you want to delete this goal and ALL its increments? This action cannot be undone.")) return;
+            try {
+                const res = await fetch(`/api/goals/${goalId}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const data = await res.json();
+                    alert(data.detail || "Error deleting goal.");
+                    return;
+                }
+                // Limpa o goal do Set de expandidos, se estiver lá
+                expandedGoals.delete(goalId);
+                fetchGoals();
+            } catch (err) {
+                console.error(err);
+                alert("Error deleting goal.");
+            }
+        }
+
+        async function completeGoal(goalId) {
+            if(!confirm("Mark this goal as completed?")) return;
+            try {
+                const res = await fetch(`/api/goals/${goalId}/complete`, { method: 'POST' });
+                if (!res.ok) {
+                    const data = await res.json();
+                    alert(data.detail || "Error completing goal.");
+                    return;
+                }
+                fetchGoals();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // ==========================
+        // INCREMENT ACTIONS
+        // ==========================
+        async function addIncrement(event, goalId) {
+            event.preventDefault();
+            const form = event.target;
+            const valInput = form.querySelector('[name="value"]');
+            const imgInput = form.querySelector('[name="image"]');
+
+            const payload = {
+                value: parseInt(valInput.value, 10),
+                image_url: imgInput.value || null
+            };
+
+            try {
+                const res = await fetch(`/api/goals/${goalId}/increments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if(res.ok) {
+                    form.reset();
+                    expandedGoals.add(goalId);
+                    fetchGoals();
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error adding increment.");
+            }
+        }
+
+        function openIncModal(incId, value, imageUrl) {
+            document.getElementById('inc-id').value = incId;
+            document.getElementById('inc-value').value = value;
+            document.getElementById('inc-image').value = imageUrl;
+            document.getElementById('inc-modal').showModal();
+        }
+
+        function closeIncModal() {
+            document.getElementById('inc-modal').close();
+        }
+
+        async function saveIncrement(event) {
+            event.preventDefault();
+            const id = document.getElementById('inc-id').value;
+            const payload = {
+                value: parseInt(document.getElementById('inc-value').value, 10),
+                image_url: document.getElementById('inc-image').value || null
+            };
+
+            try {
+                await fetch(`/api/increments/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                closeIncModal();
+                fetchGoals();
+            } catch (err) {
+                console.error(err);
+                alert("Error updating increment.");
+            }
+        }
+
+        async function deleteIncrement(incId) {
+            if(!confirm("Are you sure you want to delete this increment?")) return;
+            try {
+                await fetch(`/api/increments/${incId}`, { method: 'DELETE' });
+                fetchGoals();
+            } catch (err) {
+                console.error(err);
+                alert("Error deleting increment.");
+            }
+        }
+    </script>
+</body>
+</html>

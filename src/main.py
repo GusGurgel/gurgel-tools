@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from apps import chronometers, create_db_and_tables, prompt_templates, snippets
+from apps import chronometers, create_db_and_tables, goals, prompt_templates, snippets
 
 main_path = Path(__file__).resolve().parents[1]
 
@@ -36,6 +36,15 @@ projects = [
         "end_point": "/prompt-templates",
         "icon": "library",
         "icon_color": "#3b82f6",
+    },
+    {
+        "name": "Goals",
+        "description": "Track integer-based objectives by adding increments over time.",
+        "version": "1.0",
+        "path": "src/apps/goals/goals.html",
+        "end_point": "/goals",
+        "icon": "target",
+        "icon_color": "#ef4444",
     },
 ]
 
@@ -83,3 +92,4 @@ for proj in projects:
 chronometers(app)
 snippets(app)
 prompt_templates(app)
+goals(app)
