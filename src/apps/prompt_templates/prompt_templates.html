@@ -6,23 +6,23 @@
     <title>Prompt Templates | Gurgel Tools</title>
     <link rel="stylesheet" href="css/pico.min.css" />
     <style>
-        .template-card {
+        .pt-template-card {
             cursor: pointer;
             transition: border-color 0.2s, background-color 0.2s;
             margin-bottom: 1rem;
         }
-        .template-card:hover {
+        .pt-template-card:hover {
             border-color: var(--pico-primary);
             background-color: var(--pico-card-sectioning-background-color);
         }
-        .template-card.active {
+        .pt-template-card.active {
             border-color: var(--pico-primary);
             box-shadow: 0 0 0 1px var(--pico-primary);
         }
-        .template-card h4 { margin-bottom: 0.25rem; }
-        .template-card p { margin-bottom: 0; font-size: 0.875rem; color: var(--pico-muted-color); }
+        .pt-template-card h4 { margin-bottom: 0.25rem; }
+        .pt-template-card p { margin-bottom: 0; font-size: 0.875rem; color: var(--pico-muted-color); }
 
-        #detail-view { position: sticky; top: 1rem; }
+        #pt-detail-view { position: sticky; top: 1rem; }
         .hidden { display: none !important; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
         .gap-2 { gap: 0.5rem; display: flex; }
@@ -76,25 +76,25 @@
 
         <div class="grid">
             <!-- Left Column: Search & List -->
-            <div id="list-container">
+            <div id="pt-list-container">
                 <!-- Caixa de Pesquisa -->
-                <input type="search" id="search-input" placeholder="Search templates..." oninput="renderList()" style="margin-bottom: 1rem;" />
+                <input type="search" id="pt-search-input" placeholder="Search templates..." oninput="renderList()" style="margin-bottom: 1rem;" />
 
-                <div id="template-list"></div>
-                <p id="empty-state" class="hidden">No templates found.</p>
+                <div id="pt-template-list"></div>
+                <p id="pt-empty-state" class="hidden">No templates found.</p>
             </div>
 
             <!-- Right Column: Detail / Edit / Action -->
-            <div id="detail-container">
+            <div id="pt-detail-container">
                 <!-- Idle State -->
-                <article id="detail-idle">
+                <article id="pt-detail-idle">
                     <p class="text-center" style="color: var(--pico-muted-color);">Select a template from the list to view and use.</p>
                 </article>
 
                 <!-- Action View -->
-                <article id="detail-view" class="hidden">
+                <article id="pt-detail-view" class="hidden">
                     <header class="flex-between">
-                        <h3 id="view-name" style="margin: 0;"></h3>
+                        <h3 id="pt-view-name" style="margin: 0;"></h3>
                         <div class="gap-2">
                             <button onclick="showEditForm()" class="secondary outline" aria-label="Edit">
                                 <i data-lucide="pencil"></i>
@@ -104,13 +104,13 @@
                             </button>
                         </div>
                     </header>
-                    <p id="view-description" style="color: var(--pico-muted-color); margin-bottom: 0;"></p>
+                    <p id="pt-view-description" style="color: var(--pico-muted-color); margin-bottom: 0;"></p>
 
                     <!-- Content Preview (Limitado a 10 linhas com botão expandir) -->
                     <div class="preview-box">
                         <strong style="display: block; margin-bottom: 0.5rem; color: var(--pico-muted-color); font-size: 0.875rem;">Template Content</strong>
-                        <div id="content-preview-text" class="preview-collapsed"></div>
-                        <button id="toggle-preview-btn" class="secondary outline" style="margin-top: 0.75rem; width: 100%; display: none;" onclick="togglePreview()">
+                        <div id="pt-content-preview-text" class="preview-collapsed"></div>
+                        <button id="pt-toggle-preview-btn" class="secondary outline" style="margin-top: 0.75rem; width: 100%; display: none;" onclick="togglePreview()">
                             <i data-lucide="chevron-down"></i> Expand
                         </button>
                     </div>
@@ -118,7 +118,7 @@
                     <hr/>
 
                     <!-- Dynamic form based on Variables -->
-                    <div id="variables-container"></div>
+                    <div id="pt-variables-container"></div>
 
                     <footer>
                         <button onclick="copyToClipboard()" class="primary">
@@ -128,22 +128,22 @@
                 </article>
 
                 <!-- Edit / Create Form -->
-                <article id="form-view" class="hidden">
-                    <header><h3 id="form-title" style="margin: 0;">Create Template</h3></header>
-                    <form id="template-form" onsubmit="handleFormSubmit(event)">
-                        <input type="hidden" id="form-id">
+                <article id="pt-form-view" class="hidden">
+                    <header><h3 id="pt-form-title" style="margin: 0;">Create Template</h3></header>
+                    <form id="pt-template-form" onsubmit="handleFormSubmit(event)">
+                        <input type="hidden" id="pt-form-id">
 
-                        <label for="form-name">Name</label>
-                        <input type="text" id="form-name" required>
+                        <label for="pt-form-name">Name</label>
+                        <input type="text" id="pt-form-name" required>
 
-                        <label for="form-description">Description (optional)</label>
-                        <textarea type="text" id="form-description">
+                        <label for="pt-form-description">Description (optional)</label>
+                        <input type="text" id="pt-form-description">
 
-                        <label for="form-content">
+                        <label for="pt-form-content">
                             Content
                             <small>Use <code>[[Variable Name]]</code> to create dynamic fields.</small>
                         </label>
-                        <textarea id="form-content" rows="8" required></textarea>
+                        <textarea id="pt-form-content" rows="8" required></textarea>
 
                         <footer class="flex-between">
                             <button type="button" class="secondary outline" onclick="cancelForm()">Cancel</button>
@@ -191,15 +191,14 @@
             }
         }
 
-        // List rendering agora possui filtragem baseada no input
         function renderList() {
-            const listEl = document.getElementById('template-list');
-            const emptyEl = document.getElementById('empty-state');
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const listEl = document.getElementById('pt-template-list');
+            const emptyEl = document.getElementById('pt-empty-state');
+            const searchInput = document.getElementById('pt-search-input');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
             listEl.innerHTML = '';
 
-            // Filtra os templates como infixo ignorando a caixa
             const filteredTemplates = templates.filter(t =>
                 t.name.toLowerCase().includes(searchTerm)
             );
@@ -212,7 +211,7 @@
 
             filteredTemplates.forEach(t => {
                 const article = document.createElement('article');
-                article.className = 'template-card';
+                article.className = 'pt-template-card';
                 if (activeTemplate && activeTemplate.id === t.id) article.classList.add('active');
 
                 article.onclick = () => selectTemplate(t.id);
@@ -229,35 +228,29 @@
             activeTemplate = templates.find(t => t.id === id);
             renderList();
 
-            document.getElementById('detail-idle').classList.add('hidden');
-            document.getElementById('form-view').classList.add('hidden');
-            document.getElementById('detail-view').classList.remove('hidden');
+            document.getElementById('pt-detail-idle').classList.add('hidden');
+            document.getElementById('pt-form-view').classList.add('hidden');
+            document.getElementById('pt-detail-view').classList.remove('hidden');
 
-            document.getElementById('view-name').innerText = activeTemplate.name;
-            document.getElementById('view-description').innerText = activeTemplate.description || '';
+            document.getElementById('pt-view-name').innerText = activeTemplate.name;
+            document.getElementById('pt-view-description').innerText = activeTemplate.description || '';
 
-            // Setup do Preview de Conteúdo
             setupContentPreview();
-
             buildVariablesForm();
 
             if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
             lucide.createIcons();
         }
 
-        // Lógica da caixa de preview (limite de 10 linhas e botão expandir)
         function setupContentPreview() {
-            const previewText = document.getElementById('content-preview-text');
-            const toggleBtn = document.getElementById('toggle-preview-btn');
+            const previewText = document.getElementById('pt-content-preview-text');
+            const toggleBtn = document.getElementById('pt-toggle-preview-btn');
 
-            // Reseta a visualização
             previewText.className = 'preview-collapsed';
-            previewText.textContent = activeTemplate.content; // textContent mantém segurança e quebras de linha
+            previewText.textContent = activeTemplate.content;
             toggleBtn.style.display = 'none';
 
-            // Espera a renderização do DOM para calcular as alturas reais
             requestAnimationFrame(() => {
-                // Se a altura que precisaria ter for maior do que a altura do limite (10 linhas), mostra o botão
                 if (previewText.scrollHeight > previewText.clientHeight) {
                     toggleBtn.style.display = 'block';
                     toggleBtn.innerHTML = '<i data-lucide="chevron-down"></i> Expand';
@@ -267,8 +260,8 @@
         }
 
         function togglePreview() {
-            const previewText = document.getElementById('content-preview-text');
-            const toggleBtn = document.getElementById('toggle-preview-btn');
+            const previewText = document.getElementById('pt-content-preview-text');
+            const toggleBtn = document.getElementById('pt-toggle-preview-btn');
 
             if (previewText.classList.contains('preview-collapsed')) {
                 previewText.classList.replace('preview-collapsed', 'preview-expanded');
@@ -281,7 +274,7 @@
         }
 
         function buildVariablesForm() {
-            const container = document.getElementById('variables-container');
+            const container = document.getElementById('pt-variables-container');
             container.innerHTML = '';
             activeVariables = [];
 
@@ -303,7 +296,7 @@
 
                 const textarea = document.createElement('textarea');
                 textarea.className = 'var-input';
-                textarea.id = `var-${btoa(varName).replace(/=/g, '')}`;
+                textarea.id = `pt-var-${btoa(varName).replace(/=/g, '')}`;
                 textarea.placeholder = `Enter ${varName}...`;
 
                 label.appendChild(textarea);
@@ -317,9 +310,9 @@
             let finalContent = activeTemplate.content;
 
             activeVariables.forEach(varName => {
-                const safeId = `var-${btoa(varName).replace(/=/g, '')}`;
+                const safeId = `pt-var-${btoa(varName).replace(/=/g, '')}`;
                 const textarea = document.getElementById(safeId);
-                const val = textarea.value || '';
+                const val = textarea ? textarea.value || '' : '';
 
                 const replaceRegex = new RegExp(`\\[\\[${escapeRegExp(varName)}\\]\\]`, 'g');
                 finalContent = finalContent.replace(replaceRegex, val);
@@ -328,7 +321,7 @@
             try {
                 await navigator.clipboard.writeText(finalContent);
 
-                const btn = document.querySelector('#detail-view footer button');
+                const btn = document.querySelector('#pt-detail-view footer button');
                 const originalHtml = btn.innerHTML;
                 btn.innerHTML = `<i data-lucide="check"></i> Copied!`;
                 btn.classList.replace('primary', 'outline');
@@ -353,11 +346,11 @@
             activeTemplate = null;
             renderList();
 
-            document.getElementById('form-title').innerText = 'Create Template';
-            document.getElementById('form-id').value = '';
-            document.getElementById('form-name').value = '';
-            document.getElementById('form-description').value = '';
-            document.getElementById('form-content').value = '';
+            document.getElementById('pt-form-title').innerText = 'Create Template';
+            document.getElementById('pt-form-id').value = '';
+            document.getElementById('pt-form-name').value = '';
+            document.getElementById('pt-form-description').value = '';
+            document.getElementById('pt-form-content').value = '';
 
             switchViews('form');
         }
@@ -365,11 +358,11 @@
         function showEditForm() {
             if (!activeTemplate) return;
 
-            document.getElementById('form-title').innerText = 'Edit Template';
-            document.getElementById('form-id').value = activeTemplate.id;
-            document.getElementById('form-name').value = activeTemplate.name;
-            document.getElementById('form-description').value = activeTemplate.description || '';
-            document.getElementById('form-content').value = activeTemplate.content;
+            document.getElementById('pt-form-title').innerText = 'Edit Template';
+            document.getElementById('pt-form-id').value = activeTemplate.id;
+            document.getElementById('pt-form-name').value = activeTemplate.name;
+            document.getElementById('pt-form-description').value = activeTemplate.description || '';
+            document.getElementById('pt-form-content').value = activeTemplate.content;
 
             switchViews('form');
         }
@@ -383,24 +376,24 @@
         }
 
         function switchViews(view) {
-            document.getElementById('detail-idle').classList.add('hidden');
-            document.getElementById('detail-view').classList.add('hidden');
-            document.getElementById('form-view').classList.add('hidden');
+            document.getElementById('pt-detail-idle').classList.add('hidden');
+            document.getElementById('pt-detail-view').classList.add('hidden');
+            document.getElementById('pt-form-view').classList.add('hidden');
 
-            if (view === 'detail') document.getElementById('detail-view').classList.remove('hidden');
-            if (view === 'form') document.getElementById('form-view').classList.remove('hidden');
-            if (view === 'idle') document.getElementById('detail-idle').classList.remove('hidden');
+            if (view === 'detail') document.getElementById('pt-detail-view').classList.remove('hidden');
+            if (view === 'form') document.getElementById('pt-form-view').classList.remove('hidden');
+            if (view === 'idle') document.getElementById('pt-detail-idle').classList.remove('hidden');
             lucide.createIcons();
         }
 
         async function handleFormSubmit(e) {
             e.preventDefault();
 
-            const id = document.getElementById('form-id').value;
+            const id = document.getElementById('pt-form-id').value;
             const payload = {
-                name: document.getElementById('form-name').value,
-                description: document.getElementById('form-description').value,
-                content: document.getElementById('form-content').value
+                name: document.getElementById('pt-form-name').value,
+                description: document.getElementById('pt-form-description').value,
+                content: document.getElementById('pt-form-content').value
             };
 
             const method = id ? 'PUT' : 'POST';
