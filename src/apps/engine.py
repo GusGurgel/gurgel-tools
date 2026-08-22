@@ -12,6 +12,8 @@ if url is None:
 engine_kwargs = {}
 if url.startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
+if url.startswith("postgresql"):
+    engine_kwargs["pool_pre_ping"] = True
 
 engine = create_engine(url, **engine_kwargs)
 
